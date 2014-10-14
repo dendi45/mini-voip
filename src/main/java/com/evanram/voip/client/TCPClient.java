@@ -1,6 +1,7 @@
 package com.evanram.voip.client;
 
 import static com.evanram.voip.VoIPApplication.BUFFER_SIZE;
+import static com.evanram.voip.VoIPApplication.tcpSocketOK;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -29,11 +30,10 @@ public class TCPClient extends Client
 			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 			out.flush();
 			
-			while(running && (socket != null && socket.isConnected() && !socket.isClosed()))
+			while(running && tcpSocketOK(socket))
 			{
 				byte[] buffer = new byte[BUFFER_SIZE];
 				targetDataLine.read(buffer, 0, buffer.length);
-
 				out.write(buffer);
 				out.flush();
 			}
