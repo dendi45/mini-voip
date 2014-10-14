@@ -1,6 +1,7 @@
 package com.evanram.voip;
 
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
 import java.util.Scanner;
@@ -99,6 +100,11 @@ public class VoIPApplication
 			e.printStackTrace();
 			//TODO end call and then call System.exit(1)
 		}
+	}
+	
+	public static boolean tcpSocketOK(Socket socket)
+	{
+		return (socket != null && socket.isConnected() && !socket.isClosed());
 	}
 	
 	private static boolean isMostlyQuiet(byte[] buffer)
