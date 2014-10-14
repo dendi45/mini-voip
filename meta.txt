@@ -1,0 +1,12 @@
+  ______________________________________
+|   ---     ---          __   ______   |
+|   \   \  /  /  ______ |__| |  __ |   |
+|    \   \/  /  |  _  | |  | |  ___|   |
+|     \_____/   |_____| |__| |  |      |
+|                            |__|      |
+|______________________________________|
+...ascii art: why not?...
+
+This is a voice over internet protocol (VoIP) application by Evan Ram.
+The User Datagram Protocol (UDP) or the Transmission Control Protocol (TCP) may be used.
+This application features a peer to peer (p2p) network.
