@@ -1,13 +1,13 @@
 package com.evanram.voip.server;
 
-import static com.evanram.voip.VoIPApplication.BUFFER_SIZE;
-import static com.evanram.voip.VoIPApplication.playSound;
-import static com.evanram.voip.VoIPApplication.tcpSocketOK;
+import static com.evanram.voip.VoIPApplication.bufferSize;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import com.evanram.voip.Utils;
 
 public class TCPServer extends Server
 {
@@ -30,16 +30,22 @@ public class TCPServer extends Server
 			remoteSocketInputStream = new DataInputStream(remoteSocket.getInputStream());
 			System.out.println("TCP server accepted and found input stream for socket: " + remoteSocket.toString());
 
-			while(running && tcpSocketOK(remoteSocket))
+			while(running && Utils.tcpSocketOK(remoteSocket))
 			{
-				byte[] buffer = new byte[BUFFER_SIZE];
+				byte[] buffer = new byte[bufferSize];
 				remoteSocketInputStream.read(buffer, 0, buffer.length);
-				playSound(buffer);
+				handle(buffer);
 			}
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void implementedStopServer() throws IOException
+	{
+		serverSocket.close();
 	}
 }
