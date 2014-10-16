@@ -1,9 +1,9 @@
 package com.evanram.voip;
 
+import static com.evanram.voip.Utils.*;
+
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
-import java.text.MessageFormat;
 import java.util.Scanner;
 
 import javax.sound.sampled.AudioFormat;
@@ -16,61 +16,35 @@ import javax.sound.sampled.LineUnavailableException;
 import com.evanram.voip.client.Client;
 import com.evanram.voip.client.TCPClient;
 import com.evanram.voip.client.UDPClient;
+import com.evanram.voip.gui.Gui;
 import com.evanram.voip.server.Server;
 import com.evanram.voip.server.TCPServer;
 import com.evanram.voip.server.UDPServer;
 
 public class VoIPApplication
 {
-	//16k buffer and sample rate work, as far as my tests have gone, well in terms of call quality.
-	public static final int BUFFER_SIZE = 16_000;
+	//16k default buffer and sample rate work, as far as my tests have gone, well in terms of call quality.
 	public static final AudioFormat AUDIO_FORMAT = new AudioFormat(16_000F, 16, 2, true, false);
+	public static int bufferSize = 16_000;
 	
-	public static VoIPApplication instance;	//TODO might not want to use a singleton
+	public static VoIPApplication instance;	//singleton since this class should never be created more than once
 
+	private Gui gui;
 	private Server server;
 	private Client client;
+	private InetAddress peerIp;
+	private int peerPort;
+	private Scanner scanner;
+	
+	private volatile long callStartTimeMillis;
+	
+	private VoIPApplication() {}	//disallow accidentally instantiating from elsewhere
 	
 	public static void main(String[] args)
 	{
-		//TODO launch GUI used to launch this
+		System.out.println("Starting p2p VoIP. Note any two peers must share the same network protocol");
 		instance = new VoIPApplication();
-		instance.start();
-	}
-	
-	public void start()
-	{
-		try
-		{
-			System.out.println("Starting p2p VoIP. Note any two peers must share the same network protocol");
-			
-			Scanner scanner = new Scanner(System.in);
-			System.out.print("Network protocol (0 = UDP, 1 = TCP): ");
-			int protocol = Integer.parseInt(getOrDefault(scanner.nextLine(), "0"));
-			System.out.print("Server listen port: ");
-			int serverPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
-			System.out.print("Peer address: ");
-			InetAddress peerIp = InetAddress.getByName(getOrDefault(scanner.nextLine(), "127.0.0.1"));
-			System.out.print("Peer port: ");
-			int peerPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
-			scanner.close();
-			
-			if(peerIp == InetAddress.getLoopbackAddress() && peerPort == serverPort)
-				System.out.println("Echo mode detected (peer is localhost & peer and server ports are equal)");
-			
-			String line = "|>------------------------------------<|";
-			System.out.println(line + '\n' +formSettingsJSON(protocol, serverPort, peerIp, peerPort) + '\n' + line);
-			
-			server = (protocol == 0 ? new UDPServer(serverPort) : new TCPServer(serverPort));
-			server.start();
-			
-			client = (protocol == 0 ? new UDPClient(peerIp, peerPort) : new TCPClient(peerIp, peerPort));
-			client.start();
-		}
-		catch(UnknownHostException e)
-		{
-			e.printStackTrace();
-		}
+		instance.setGui(new Gui());
 	}
 	
 	public static void playSound(byte[] buffer)
@@ -81,7 +55,7 @@ public class VoIPApplication
 		try
 		{
 			final Clip clip = AudioSystem.getClip();
-			
+
 			clip.addLineListener(new LineListener()
 			{
 				@Override
@@ -98,58 +72,105 @@ public class VoIPApplication
 		catch(LineUnavailableException e)
 		{
 			e.printStackTrace();
-			//TODO end call and then call System.exit(1)
+			instance.shutdown();
 		}
 	}
 	
-	public static boolean tcpSocketOK(Socket socket)
+	//TODO scanner -> gui input
+	public void start()
 	{
-		return (socket != null && socket.isConnected() && !socket.isClosed());
-	}
-	
-	private static boolean isMostlyQuiet(byte[] buffer)
-	{
-		//referenced from http://stackoverflow.com/a/15010203
-		
-		float hold = .9999F;
-		float thresh = .7F;
-		float soundEnvelope = 0;
-
-		float quietBytes = 0;
-		
-		for (int i = 0; i < buffer.length; i++)
+		try
 		{
-			float currentByte = buffer[i];
+			if(scanner == null)
+				scanner = new Scanner(System.in);
 			
-			float f = Math.abs(currentByte);
-			soundEnvelope = soundEnvelope * hold + f * (1 - hold);
-
-			if (soundEnvelope <= thresh)
-				quietBytes++;
+			System.out.print("Network protocol (0 = UDP, 1 = TCP): ");
+			int protocol = Integer.parseInt(getOrDefault(scanner.nextLine(), "0"));
+			System.out.print("Server listen port: ");
+			int serverPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
+			System.out.print("Peer address: ");
+			InetAddress peerIp = InetAddress.getByName(getOrDefault(scanner.nextLine(), "127.0.0.1"));
+			System.out.print("Peer port: ");
+			int peerPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
+			
+			if(peerIp == InetAddress.getLoopbackAddress() && peerPort == serverPort)
+				System.out.println("Echo mode detected (peer is localhost & peer and server ports are equal)");
+			
+			String line = "|>------------------------------------<|";
+			System.out.println(line + '\n' +formSettingsJSON(protocol, serverPort, peerIp, peerPort) + '\n' + line);
+			
+			this.peerIp = peerIp;
+			this.peerPort = peerPort;
+			
+			server = (protocol == 0 ? new UDPServer(serverPort) : new TCPServer(serverPort));
+			server.start();
+			
+			client = (protocol == 0 ? new UDPClient(peerIp, peerPort) : new TCPClient(peerIp, peerPort));
+			client.start();
+			
+			callStartTimeMillis = System.currentTimeMillis();
 		}
-		
-		float level = (quietBytes / (float) buffer.length);	//determine how much of this buffer was quiet
-		return level > 0.35F;	//magic value 0.35F seems to work well
+		catch(UnknownHostException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
-	private static String getOrDefault(String input, String defaultOutput)
+	public void shutdown()
 	{
-		if(input == null || (input = input.trim()).length() == 0)
-			return defaultOutput;
-		
-		return input;
+		try
+		{
+			endCall();
+		}
+		finally
+		{
+			System.exit(0);
+		}
 	}
 	
-	private static String formSettingsJSON(int protocol, int serverPort, InetAddress peerIp, int peerPort)
+	public void endCall()
 	{
-		return MessageFormat.format(
-				"\"settings\": '{'"
-					+ "{0}\"protocol\": \"{1}\""
-					+ "{0}\"listen_port\": \"{2}\""
-					+ "{0}\"peer_host\": \"{3}\""
-					+ "{0}\"peer_port\": \"{4}\""
-				+ "\n'}'", 
-				//Using Integer.toString because MessageFormat.format will change an int such as 12345 to 12,345
-				"\n\t", protocol, Integer.toString(serverPort), peerIp.getHostName(), Integer.toString(peerPort));
+		System.out.println("Ending call");
+		peerIp = null;
+		peerPort = 0;
+		
+		if(client != null)
+			client.stopClient();
+		
+		if(server != null)
+			server.stopServer();
+		
+		System.out.println("Call ended");
+	}
+	
+	public String getCallInfo()
+	{
+		return new StringBuilder().append(peerIp.getHostName()).append(" - ").append(getCallTime()).toString();
+	}
+	
+	private String getCallTime()
+	{
+		long delta = System.currentTimeMillis() - callStartTimeMillis;
+		
+		int seconds = (int) ((delta / 1000) % 60);
+		int minutes = (int) ((delta / (1000*60)) % 60);
+		int hours = (int) ((delta / (1000*60*60)) % 24);
+		
+		return String.format("%d:%02d:%02d", hours, minutes, seconds);
+	}
+
+	public Gui getGui()
+	{
+		return gui;
+	}
+
+	public void setGui(Gui gui)
+	{
+		this.gui = gui;
+	}
+
+	public boolean isInCall()
+	{
+		return peerIp != null && client.isRunning() && server.isRunning();
 	}
 }
