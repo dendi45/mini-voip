@@ -1,7 +1,6 @@
 package com.evanram.voip.client;
 
-import static com.evanram.voip.VoIPApplication.BUFFER_SIZE;
-import static com.evanram.voip.VoIPApplication.tcpSocketOK;
+import static com.evanram.voip.VoIPApplication.bufferSize;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,8 +9,13 @@ import java.net.Socket;
 
 import javax.sound.sampled.TargetDataLine;
 
+import com.evanram.voip.CallData;
+import com.evanram.voip.Utils;
+
 public class TCPClient extends Client
 {
+	private DataOutputStream out;
+	
 	public TCPClient(InetAddress peerIp, int peerPort)
 	{
 		super(peerIp, peerPort);
@@ -27,12 +31,12 @@ public class TCPClient extends Client
 			if(targetDataLine == null)
 				return;
 			
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+			out = new DataOutputStream(socket.getOutputStream());
 			out.flush();
 			
-			while(running && tcpSocketOK(socket))
+			while(running && Utils.tcpSocketOK(socket))
 			{
-				byte[] buffer = new byte[BUFFER_SIZE];
+				byte[] buffer = new byte[bufferSize];
 				targetDataLine.read(buffer, 0, buffer.length);
 				out.write(buffer);
 				out.flush();
@@ -43,5 +47,12 @@ public class TCPClient extends Client
 			e.printStackTrace();
 			System.err.println("Error in establishing connection to peer socket");
 		}
+	}
+
+	@Override
+	public void implementedStopClient() throws IOException
+	{
+		out.write(CallData.END_CALL);
+		out.flush();
 	}
 }
