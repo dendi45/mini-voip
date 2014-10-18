@@ -1,8 +1,11 @@
 package com.evanram.voip;
 
+import java.awt.Point;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.text.MessageFormat;
+
+import com.evanram.voip.gui.Gui;
 
 public class Utils
 {
@@ -55,5 +58,31 @@ public class Utils
 				+ "\n'}'", 
 				//Using Integer.toString because MessageFormat.format will change an int such as 12345 to 12,345
 				"\n\t", protocol, Integer.toString(serverPort), peerIp.getHostName(), Integer.toString(peerPort));
+	}
+	
+	public static int stringWidth(String s)
+	{
+		return Gui.staticCacheFontMetrics.stringWidth(s);
+	}
+	
+	public static Point getNearestPoint(Point testPos, Point[] reference)
+	{
+		if(reference.length == 0)
+			return testPos;
+		
+		double bestDistance = testPos.distance(reference[0]);
+		Point bestPoint = reference[0];
+		
+		for(int i = 1; i < reference.length; i++)
+		{
+			double d = testPos.distance(reference[i]);
+			if(d < bestDistance)
+			{
+				bestDistance = d;
+				bestPoint = reference[i];
+			}
+		}
+		
+		return bestPoint;
 	}
 }
