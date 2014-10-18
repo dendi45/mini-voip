@@ -330,6 +330,5 @@ public class Gui implements ActionListener
 			new Point((sW / 2) - (fW / 2), (sH / 2) - (fH / 2)),           // middle-middle
 			new Point((sW / 2) - (fW / 2), sH - OFFSET - (fH * 2))         // near-bottom-middle (above taskbar on many machines)
 		};
-		System.out.println(dockingPoints[4]);
 	}
 }
