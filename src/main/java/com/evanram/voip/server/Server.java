@@ -52,7 +52,6 @@ public abstract class Server extends Thread
 	
 	public final void stopServer()
 	{
-		System.out.println("Stopping server");
 		running = false;
 		
 		try
