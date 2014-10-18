@@ -1,5 +1,5 @@
-voip
+Mini VoIP
 ====
 
-A voice over internet protocol (VoIP) Java application.
-Refer to meta.txt for more information.
+An indev tiny-styled application for speaking with others around the globe.
+Please refer to [meta.txt](meta.txt) for more information.
