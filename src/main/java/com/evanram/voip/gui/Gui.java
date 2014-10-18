@@ -2,14 +2,22 @@ package com.evanram.voip.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Timer;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -19,14 +27,17 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 
+import com.evanram.voip.Utils;
 import com.evanram.voip.VoIPApplication;
 
 public class Gui implements ActionListener
 {
+	public static FontMetrics staticCacheFontMetrics;
+	private static JFrame frame;
+	
 	private VoIPApplication voip = VoIPApplication.instance;
 	
-	private JFrame frame;
-	private Point dockingPoint;
+	private Point[] dockingPoints;
 	
 	private JMenuBar menuBar;
 	private JMenu menu_Call;
@@ -51,12 +62,17 @@ public class Gui implements ActionListener
 	private JMenuItem menuItem_Dock;
 	private JMenuItem menuItem_Exit;
 	
-	private JPanel panel;
-	private JLabel label;
+	private JPanel panel_Main;
+	private JLabel mainLabel;
 	private final String label_defaultText = "Mini VoIP";
 	
 	private final ButtonGroup networkProtocolButtonGroup = new ButtonGroup();
 	private final ButtonGroup audioBufferButtonGroup = new ButtonGroup();
+	private JPanel panel_newCallWrappingPanel;
+	private Component horizontalGlue;
+	private Component horizontalGlue_1;
+	
+	private Color color_almostWhite = new Color(0xFAFAFA);
 
 	public Gui()
 	{
@@ -79,12 +95,18 @@ public class Gui implements ActionListener
 
 	private void initialize()
 	{
-		dockingPoint = new Point(5, 5);
-
 		frame = new JFrame();
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setLocation(dockingPoint);
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		frame.getContentPane().setLayout(new BorderLayout(0, 0));
+		
+		frame.addWindowListener(new WindowAdapter()
+		{
+			@Override
+			public void windowClosing(WindowEvent arg0)
+			{
+				frame.setExtendedState(JFrame.ICONIFIED);
+			}
+		});
 		
 		menuBar = new JMenuBar();
 		menuBar.setBackground(new Color(0xF5F5F5));
@@ -163,19 +185,30 @@ public class Gui implements ActionListener
 		menuItem_Exit = new JMenuItem("Exit");
 		menu_App.add(menuItem_Exit);
 		
-		panel = new JPanel();
-		panel.setBackground(new Color(0xFAFAFA));
+		panel_newCallWrappingPanel = new JPanel();
+		panel_newCallWrappingPanel.setBackground(color_almostWhite);
 		
-		frame.getContentPane().add(panel, BorderLayout.SOUTH);
-		label = new JLabel(label_defaultText);
-		label.setFont(new Font("SansSerif", Font.TYPE1_FONT, 16));
-		Timer timer_updateText = new Timer();
-		timer_updateText.scheduleAtFixedRate(new UpdateLabelTask(label, label_defaultText), 1000L, 1000L);
-		panel.add(label, BorderLayout.NORTH);
+		//frame.getContentPane().add(panel_newCallWrappingPanel);
+		panel_Main = new JPanel();
+		panel_Main.setBackground(color_almostWhite);
+		
+		frame.add(panel_Main, BorderLayout.SOUTH);
+		mainLabel = new JLabel(label_defaultText);
+		mainLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		panel_Main.setLayout(new BoxLayout(panel_Main, BoxLayout.X_AXIS));
+		
+		horizontalGlue_1 = Box.createHorizontalGlue();
+		panel_Main.add(horizontalGlue_1);
+		panel_Main.add(mainLabel);
+		
+		horizontalGlue = Box.createHorizontalGlue();
+		panel_Main.add(horizontalGlue);
 		
 		MouseAdapter customMouseAdaptor = new ComponentDragAdapter(frame);
-		panel.addMouseListener(customMouseAdaptor);
-		panel.addMouseMotionListener(customMouseAdaptor);
+		panel_Main.addMouseListener(customMouseAdaptor);
+		panel_Main.addMouseMotionListener(customMouseAdaptor);
+		panel_newCallWrappingPanel.addMouseListener(customMouseAdaptor);
+		panel_newCallWrappingPanel.addMouseMotionListener(customMouseAdaptor);
 		
 		frame.setAlwaysOnTop(true);
 		frame.setUndecorated(true);
@@ -183,6 +216,11 @@ public class Gui implements ActionListener
 		
 		addActionListeners();
 		frame.pack();
+		
+		setupDockingPoints();
+		frame.setLocation(dockingPoints[0]);
+		
+		new Timer().scheduleAtFixedRate(new UpdateTextTask(frame, mainLabel, label_defaultText), 0L, 250L);	//updates call info 'contact_name - 0:00:00'
 	}
 
 	@Override
@@ -193,17 +231,17 @@ public class Gui implements ActionListener
 		
 		if(command.endsWith("kb"))	//audio buffer radio button
 		{
-			//These are hard coded, so it should never fail to parse. Not likely that 'kb' will get i18n support
+			//Not likely that 'kb' will change, so parsing should not fail
 			int bufferSize = Integer.parseInt(command.substring(0, command.indexOf('k')));
-			VoIPApplication.bufferSize = bufferSize;
+			VoIPApplication.instance.setNextBufferSize(bufferSize);
 		}
 		else if(o == menuItem_NewCall)
 		{
-			voip.start();
+			startNewCallPanel();
 		}
 		else if(o == menuItem_EndCall)
 		{
-			label.setText(label_defaultText);
+			mainLabel.setText(label_defaultText);
 			voip.endCall();
 		}
 		else if(o == menuItem_ViewContacts)
@@ -224,12 +262,17 @@ public class Gui implements ActionListener
 		}
 		else if(o == menuItem_Dock)
 		{
-			frame.setLocation(dockingPoint);
+			frame.setLocation(Utils.getNearestPoint(frame.getLocation(), dockingPoints));
 		}
 		else if(o == menuItem_Exit)
 		{
 			voip.shutdown();
 		}
+	}
+	
+	public int getWidth()
+	{
+		return frame.getWidth();
 	}
 	
 	private void addActionListeners()
@@ -251,5 +294,36 @@ public class Gui implements ActionListener
 		
 		menuItem_Dock.addActionListener(this);
 		menuItem_Exit.addActionListener(this);
+	}
+	
+	public void removeNewCallPanel()
+	{
+		panel_newCallWrappingPanel.removeAll();
+		frame.remove(panel_newCallWrappingPanel);
+		frame.pack();
+	}
+	
+	private void startNewCallPanel()
+	{
+		frame.add(panel_newCallWrappingPanel, BorderLayout.NORTH);
+		panel_newCallWrappingPanel.add(new NewCallPanel(this));
+		panel_newCallWrappingPanel.add(Box.createVerticalStrut(40));
+		frame.pack();
+	}
+	
+	private void setupDockingPoints()
+	{
+		final int OFF = 5;
+		Dimension screenDimension = Toolkit.getDefaultToolkit().getScreenSize();
+		int w = screenDimension.width;
+		int h = screenDimension.height;
+		
+		dockingPoints = new Point[]
+		{
+			new Point(0 + OFF, 0 + OFF), //0: top-left
+			new Point(w - OFF - frame.getWidth(), 0 + OFF), //1: top-right
+			new Point(0 + OFF, h - OFF - frame.getHeight()), //2: bottom-left
+			new Point(w - OFF - frame.getWidth(), h - OFF - frame.getHeight()), //3: bottom-right
+		};
 	}
 }
