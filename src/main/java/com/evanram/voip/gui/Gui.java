@@ -313,17 +313,23 @@ public class Gui implements ActionListener
 	
 	private void setupDockingPoints()
 	{
-		final int OFF = 5;
+		final int OFFSET = 5;
 		Dimension screenDimension = Toolkit.getDefaultToolkit().getScreenSize();
-		int w = screenDimension.width;
-		int h = screenDimension.height;
+		int sW = screenDimension.width;
+		int sH = screenDimension.height;
+		int fW = frame.getWidth();
+		int fH = frame.getHeight();
 		
 		dockingPoints = new Point[]
 		{
-			new Point(0 + OFF, 0 + OFF), //0: top-left
-			new Point(w - OFF - frame.getWidth(), 0 + OFF), //1: top-right
-			new Point(0 + OFF, h - OFF - frame.getHeight()), //2: bottom-left
-			new Point(w - OFF - frame.getWidth(), h - OFF - frame.getHeight()), //3: bottom-right
+			new Point(OFFSET, OFFSET),                                     // top-left
+			new Point(sW - OFFSET - fW, OFFSET),                           // top-right
+			new Point(OFFSET, sH - OFFSET - fH),                           // bottom-left
+			new Point(sW - OFFSET - fW, sH - OFFSET - fH),                 // bottom-right
+			new Point((sW / 2) - (fW / 2), OFFSET),                        // top-middle
+			new Point((sW / 2) - (fW / 2), (sH / 2) - (fH / 2)),           // middle-middle
+			new Point((sW / 2) - (fW / 2), sH - OFFSET - (fH * 2))         // near-bottom-middle (above taskbar on many machines)
 		};
+		System.out.println(dockingPoints[4]);
 	}
 }
