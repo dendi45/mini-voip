@@ -5,6 +5,9 @@ import static com.evanram.voip.VoIPApplication.bufferSize;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
+
+import com.evanram.voip.VoIPApplication;
 
 public class UDPServer extends Server
 {
@@ -31,6 +34,11 @@ public class UDPServer extends Server
 				byte[] buffer = packet.getData();
 				handle(buffer);
 			}
+		}
+		catch(SocketException e)
+		{
+			System.err.println(e.getMessage());
+			VoIPApplication.instance.endCall();
 		}
 		catch(IOException e)
 		{
