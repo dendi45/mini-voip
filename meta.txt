@@ -1,10 +1,6 @@
-  ______________________________________
-|   ---     ---          __   ______   |
-|   \   \  /  /  ______ |__| |  __ |   |
-|    \   \/  /  |  _  | |  | |  ___|   |
-|     \_____/   |_____| |__| |  |      |
-|                            |__|      |
-|______________________________________|
+ _______________________
+| Mini VoIP - meta.txt |
+|______________________|
 
 This is a voice over internet protocol (VoIP) application by Evan Ram.
 The User Datagram Protocol (UDP) or the Transmission Control Protocol (TCP) may be used.
@@ -30,5 +26,3 @@ TODO:
 	
 	SRTP or SRTCP
 		- Encryption by default, Organized packet system
-	
-	
