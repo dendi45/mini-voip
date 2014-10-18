@@ -1,6 +1,6 @@
 package com.evanram.voip.client;
 
-import static com.evanram.voip.VoIPApplication.AUDIO_FORMAT;
+import static com.evanram.voip.VoIPApplication.audioFormat;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,7 +13,7 @@ import javax.sound.sampled.TargetDataLine;
 public abstract class Client extends Thread
 {
 	private static final int DATALINE_BUFFER_SIZE = 1024;
-	private static final DataLine.Info DATALINE = new DataLine.Info(TargetDataLine.class, AUDIO_FORMAT, DATALINE_BUFFER_SIZE);
+	private static final DataLine.Info DATALINE = new DataLine.Info(TargetDataLine.class, audioFormat, DATALINE_BUFFER_SIZE);
 	
 	//must be static or line unavailable exception thrown (even if we close() it first)
 	//possibly due to line listeners getting attached at the start of each call
@@ -47,7 +47,6 @@ public abstract class Client extends Thread
 	
 	public final void stopClient()
 	{
-		System.out.println("Stopping client");
 		running = false;
 		
 		try
@@ -70,7 +69,7 @@ public abstract class Client extends Thread
 		try
 		{
 			targetDataLine = (TargetDataLine) AudioSystem.getLine(DATALINE);
-			targetDataLine.open(AUDIO_FORMAT);
+			targetDataLine.open(audioFormat);
 			targetDataLine.start();
 			
 			return targetDataLine;
