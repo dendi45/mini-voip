@@ -16,6 +16,8 @@ import javax.sound.sampled.LineUnavailableException;
 import com.evanram.voip.client.Client;
 import com.evanram.voip.client.TCPClient;
 import com.evanram.voip.client.UDPClient;
+import com.evanram.voip.contact.Contact;
+import com.evanram.voip.contact.ContactManager;
 import com.evanram.voip.gui.Gui;
 import com.evanram.voip.server.Server;
 import com.evanram.voip.server.TCPServer;
@@ -23,18 +25,23 @@ import com.evanram.voip.server.UDPServer;
 
 public class VoIPApplication
 {
+	public static final int PROTOCOL_UDP = 0;
+	public static final int PROTOCOL_TCP = 1;
+	
 	//16k default buffer and sample rate work, as far as my tests have gone, well in terms of call quality.
-	public static final AudioFormat AUDIO_FORMAT = new AudioFormat(16_000F, 16, 2, true, false);
 	public static int bufferSize = 16_000;
+	public static AudioFormat audioFormat;
 	
 	public static VoIPApplication instance;	//singleton since this class should never be created more than once
+	public static ContactManager contactManager = new ContactManager();
 
 	private Gui gui;
 	private Server server;
 	private Client client;
-	private InetAddress peerIp;
-	private int peerPort;
+	private InetAddress peerAddress;
 	private Scanner scanner;
+	private int nextBufferSize = bufferSize;
+	private boolean noguiMode = false;
 	
 	private volatile long callStartTimeMillis;
 	
@@ -44,7 +51,14 @@ public class VoIPApplication
 	{
 		System.out.println("Starting p2p VoIP. Note any two peers must share the same network protocol");
 		instance = new VoIPApplication();
-		instance.setGui(new Gui());
+		
+		if(args.length > 0 && args[0].equalsIgnoreCase("-nogui"))
+		{
+			instance.noguiMode = true;
+			instance.start(null);
+		}
+		else
+			instance.setGui(new Gui());
 	}
 	
 	public static void playSound(byte[] buffer)
@@ -66,7 +80,7 @@ public class VoIPApplication
 				}
 			});
 			
-			clip.open(AUDIO_FORMAT, buffer, 0, buffer.length);
+			clip.open(audioFormat, buffer, 0, buffer.length);
 			clip.start();
 		}
 		catch(LineUnavailableException e)
@@ -76,43 +90,67 @@ public class VoIPApplication
 		}
 	}
 	
-	//TODO scanner -> gui input
-	public void start()
+	private static void recreateAudioFormat()
 	{
+		audioFormat = new AudioFormat(bufferSize, 16, 2, true, false);
+	}
+	
+	public void start(Contact contact)
+	{
+		bufferSize = nextBufferSize;
+		recreateAudioFormat();
+		contactManager.setLatestContact(contact);
+		
 		try
 		{
-			if(scanner == null)
-				scanner = new Scanner(System.in);
+			int protocol, serverPort, peerPort;
+			InetAddress peerAddress;
 			
-			System.out.print("Network protocol (0 = UDP, 1 = TCP): ");
-			int protocol = Integer.parseInt(getOrDefault(scanner.nextLine(), "0"));
-			System.out.print("Server listen port: ");
-			int serverPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
-			System.out.print("Peer address: ");
-			InetAddress peerIp = InetAddress.getByName(getOrDefault(scanner.nextLine(), "127.0.0.1"));
-			System.out.print("Peer port: ");
-			int peerPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
+			if(this.noguiMode)
+			{
+				if(scanner == null)
+					scanner = new Scanner(System.in);
+				
+				System.out.print("Network protocol (0 = UDP, 1 = TCP): ");
+				protocol = Integer.parseInt(getOrDefault(scanner.nextLine(), "0"));
+				System.out.print("Server listen port: ");
+				serverPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
+				System.out.print("Peer address: ");
+				peerAddress = InetAddress.getByName(getOrDefault(scanner.nextLine(), "127.0.0.1"));
+				System.out.print("Peer port: ");
+				peerPort = Integer.parseInt(getOrDefault(scanner.nextLine(), "38936"));
+			}
+			else
+			{
+				protocol = PROTOCOL_UDP;
+				serverPort = 38936;
+				peerPort = contact.getPort();
+				peerAddress = contact.getAddress();
+			}
 			
-			if(peerIp == InetAddress.getLoopbackAddress() && peerPort == serverPort)
+			if(peerAddress == InetAddress.getLoopbackAddress() && peerPort == serverPort)
 				System.out.println("Echo mode detected (peer is localhost & peer and server ports are equal)");
 			
-			String line = "|>------------------------------------<|";
-			System.out.println(line + '\n' +formSettingsJSON(protocol, serverPort, peerIp, peerPort) + '\n' + line);
+			System.out.println("Starting call with settings: \n" + formSettingsJSON(protocol, serverPort, peerAddress, peerPort));
 			
-			this.peerIp = peerIp;
-			this.peerPort = peerPort;
+			this.peerAddress = peerAddress;
 			
 			server = (protocol == 0 ? new UDPServer(serverPort) : new TCPServer(serverPort));
 			server.start();
 			
-			client = (protocol == 0 ? new UDPClient(peerIp, peerPort) : new TCPClient(peerIp, peerPort));
+			client = (protocol == 0 ? new UDPClient(peerAddress, peerPort) : new TCPClient(peerAddress, peerPort));
 			client.start();
 			
 			callStartTimeMillis = System.currentTimeMillis();
 		}
 		catch(UnknownHostException e)
 		{
-			e.printStackTrace();
+			System.err.println(e.getMessage());
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			endCall();
 		}
 	}
 	
@@ -130,25 +168,33 @@ public class VoIPApplication
 	
 	public void endCall()
 	{
-		System.out.println("Ending call");
-		peerIp = null;
-		peerPort = 0;
+		peerAddress = null;
 		
-		if(client != null)
-			client.stopClient();
-		
-		if(server != null)
-			server.stopServer();
+		try
+		{
+			if(client != null)
+				client.stopClient();
+			
+			if(server != null)
+				server.stopServer();
+		}
+		finally
+		{
+			client = null;
+			server = null;
+		}
 		
 		System.out.println("Call ended");
 	}
 	
 	public String getCallInfo()
 	{
-		return new StringBuilder().append(peerIp.getHostName()).append(" - ").append(getCallTime()).toString();
+		Contact contact = contactManager.getLatestContact();
+		String name = contact.getTruncatedEllipsisName(gui.getWidth() / 2);	//this is a good dynamic size to have before limiting name
+		return new StringBuilder().append(name).append(" - ").append(getCallTime()).toString();
 	}
 	
-	private String getCallTime()
+	public String getCallTime()
 	{
 		long delta = System.currentTimeMillis() - callStartTimeMillis;
 		
@@ -171,6 +217,11 @@ public class VoIPApplication
 
 	public boolean isInCall()
 	{
-		return peerIp != null && client.isRunning() && server.isRunning();
+		return peerAddress != null && client.isRunning() && server.isRunning();
+	}
+
+	public void setNextBufferSize(int nextBufferSize)
+	{
+		this.nextBufferSize = nextBufferSize;
 	}
 }
