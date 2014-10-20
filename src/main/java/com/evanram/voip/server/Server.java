@@ -6,16 +6,20 @@ import static com.evanram.voip.VoIPApplication.*;
 import java.io.IOException;
 import java.util.Arrays;
 
+import com.evanram.voip.AudioManager;
+
 
 public abstract class Server extends Thread
 {
 	protected final int port;
+	protected AudioManager am;
 	protected volatile boolean running;
 	
-	public Server(int port)
+	public Server(int port, AudioManager am)
 	{
 		setName("Listen Server");
 		this.port = port;
+		this.am = am;
 	}
 	
 	@Override
@@ -33,13 +37,13 @@ public abstract class Server extends Thread
 	public abstract void enterServerLoop();
 	public abstract void implementedStopServer() throws IOException;
 	
-	public void handle(byte[] bytes)
+	public void handleReceivedBytes(byte[] bytes)
 	{
 		int length = bytes.length;
 		
-		if(length == bufferSize)
+		if(length == am.getBufferSize())
 		{
-			playSound(bytes);
+			am.playSound(bytes);
 		}
 		else
 		{
