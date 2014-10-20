@@ -1,33 +1,23 @@
 package com.evanram.voip.client;
 
-import static com.evanram.voip.VoIPApplication.audioFormat;
-
 import java.io.IOException;
 import java.net.InetAddress;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.TargetDataLine;
+import com.evanram.voip.AudioManager;
 
 public abstract class Client extends Thread
 {
-	private static final int DATALINE_BUFFER_SIZE = 1024;
-	private static final DataLine.Info DATALINE = new DataLine.Info(TargetDataLine.class, audioFormat, DATALINE_BUFFER_SIZE);
-	
-	//must be static or line unavailable exception thrown (even if we close() it first)
-	//possibly due to line listeners getting attached at the start of each call
-	private static TargetDataLine targetDataLine;
-	
 	protected final InetAddress peerIp;
 	protected final int peerPort;
+	protected AudioManager am;
 	protected volatile boolean running;
 	
-	public Client(InetAddress peerIp, int peerPort)
+	public Client(InetAddress peerIp, int peerPort, AudioManager am)
 	{
 		setName("Client");
 		this.peerIp = peerIp;
 		this.peerPort = peerPort;
+		this.am = am;
 	}
 	
 	@Override
@@ -61,26 +51,6 @@ public abstract class Client extends Thread
 		System.out.println("Client stopped");
 	}
 	
-	protected final TargetDataLine setupTargetDataLine()
-	{
-		if(targetDataLine != null)
-			return targetDataLine;
-		
-		try
-		{
-			targetDataLine = (TargetDataLine) AudioSystem.getLine(DATALINE);
-			targetDataLine.open(audioFormat);
-			targetDataLine.start();
-			
-			return targetDataLine;
-		}
-		catch(LineUnavailableException e)
-		{
-			e.printStackTrace();
-			return null;
-		}
-	}
-
 	public boolean isRunning()
 	{
 		return running;
