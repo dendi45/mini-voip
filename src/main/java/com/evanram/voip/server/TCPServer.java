@@ -1,13 +1,13 @@
 package com.evanram.voip.server;
 
-import static com.evanram.voip.VoIPApplication.bufferSize;
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import com.evanram.voip.AudioManager;
 import com.evanram.voip.Utils;
+import com.evanram.voip.VoIPApplication;
 
 public class TCPServer extends Server
 {
@@ -15,9 +15,9 @@ public class TCPServer extends Server
 	private Socket remoteSocket;
 	private DataInputStream remoteSocketInputStream;
 	
-	public TCPServer(int port)
+	public TCPServer(int port, AudioManager am)
 	{
-		super(port);
+		super(port, am);
 	}
 	
 	@Override
@@ -32,14 +32,18 @@ public class TCPServer extends Server
 
 			while(running && Utils.tcpSocketOK(remoteSocket))
 			{
-				byte[] buffer = new byte[bufferSize];
+				byte[] buffer = new byte[am.getBufferSize()];
 				remoteSocketInputStream.read(buffer, 0, buffer.length);
-				handle(buffer);
+				handleReceivedBytes(buffer);
 			}
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
+		}
+		finally
+		{
+			VoIPApplication.instance.endCall();
 		}
 	}
 
