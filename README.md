@@ -10,6 +10,8 @@ Info:
 *The User Datagram Protocol (UDP) or the Transmission Control Protocol (TCP) may be used.*  
 *This application features a peer to peer (p2p) network.*
 
+By default the GUI is used. Command-line mode is activated with the runtime argument `-nogui`.
+
 ---
 
 TODO:  
@@ -37,7 +39,7 @@ SRTP or SRTCP
 - Encryption by default, Organized packet system
 
 
-######Secondary Objectives:
+######Secondary Objectives
 
 Allow user to change audio buffer size
 - Had to remove this since the feature was constantly breaking
