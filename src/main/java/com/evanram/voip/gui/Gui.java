@@ -52,12 +52,6 @@ public class Gui implements ActionListener
 	private JRadioButtonMenuItem radioButtonMenuItem_UDP;
 	private JRadioButtonMenuItem radioButtonMenuItem_TCP;
 	
-	private JRadioButtonMenuItem radioButtonAudioBuffer_24kb;
-	private JRadioButtonMenuItem radioButtonAudioBuffer_18kb;
-	private JRadioButtonMenuItem radioButtonAudioBuffer_16kb;
-	private JRadioButtonMenuItem radioButtonAudioBuffer_10kb;
-	private JRadioButtonMenuItem radioButtonAudioBuffer_8kb;
-	
 	private JMenu menu_App;
 	private JMenuItem menuItem_Dock;
 	private JMenuItem menuItem_Exit;
@@ -67,7 +61,6 @@ public class Gui implements ActionListener
 	private final String label_defaultText = "Mini VoIP";
 	
 	private final ButtonGroup networkProtocolButtonGroup = new ButtonGroup();
-	private final ButtonGroup audioBufferButtonGroup = new ButtonGroup();
 	private JPanel panel_newCallWrappingPanel;
 	private Component horizontalGlue;
 	private Component horizontalGlue_1;
@@ -150,31 +143,6 @@ public class Gui implements ActionListener
 		
 		radioButtonMenuItem_UDP.setSelected(true);
 		
-		JMenu menuAudioBuffer = new JMenu("Audio Buffer");
-		menu_Settings.add(menuAudioBuffer);
-		
-		radioButtonAudioBuffer_24kb = new JRadioButtonMenuItem("24kb");
-		audioBufferButtonGroup.add(radioButtonAudioBuffer_24kb);
-		menuAudioBuffer.add(radioButtonAudioBuffer_24kb);
-		
-		radioButtonAudioBuffer_18kb = new JRadioButtonMenuItem("18kb");
-		audioBufferButtonGroup.add(radioButtonAudioBuffer_18kb);
-		menuAudioBuffer.add(radioButtonAudioBuffer_18kb);
-		
-		radioButtonAudioBuffer_16kb = new JRadioButtonMenuItem("16kb");
-		audioBufferButtonGroup.add(radioButtonAudioBuffer_16kb);
-		menuAudioBuffer.add(radioButtonAudioBuffer_16kb);
-		
-		radioButtonAudioBuffer_10kb = new JRadioButtonMenuItem("10kb");
-		audioBufferButtonGroup.add(radioButtonAudioBuffer_10kb);
-		menuAudioBuffer.add(radioButtonAudioBuffer_10kb);
-		
-		radioButtonAudioBuffer_8kb = new JRadioButtonMenuItem("8kb");
-		audioBufferButtonGroup.add(radioButtonAudioBuffer_8kb);
-		menuAudioBuffer.add(radioButtonAudioBuffer_8kb);
-		
-		radioButtonAudioBuffer_16kb.setSelected(true);
-		
 		menu_App = new JMenu("App");
 		menu_App.setFont(new Font("SansSerif", Font.PLAIN, 14));
 		menuBar.add(menu_App);
@@ -224,18 +192,11 @@ public class Gui implements ActionListener
 	}
 
 	@Override
-	public void actionPerformed(ActionEvent e)
+	public void actionPerformed(ActionEvent event)
 	{
-		String command = e.getActionCommand();
-		Object o = e.getSource();
+		Object o = event.getSource();
 		
-		if(command.endsWith("kb"))	//audio buffer radio button
-		{
-			//Not likely that 'kb' will change, so parsing should not fail
-			int bufferSize = Integer.parseInt(command.substring(0, command.indexOf('k')));
-			VoIPApplication.instance.setNextBufferSize(bufferSize);
-		}
-		else if(o == menuItem_NewCall)
+		if(o == menuItem_NewCall)
 		{
 			startNewCallPanel();
 		}
@@ -285,12 +246,6 @@ public class Gui implements ActionListener
 		
 		radioButtonMenuItem_UDP.addActionListener(this);
 		radioButtonMenuItem_TCP.addActionListener(this);
-		
-		radioButtonAudioBuffer_24kb.addActionListener(this);
-		radioButtonAudioBuffer_18kb.addActionListener(this);
-		radioButtonAudioBuffer_16kb.addActionListener(this);
-		radioButtonAudioBuffer_10kb.addActionListener(this);
-		radioButtonAudioBuffer_8kb.addActionListener(this);
 		
 		menuItem_Dock.addActionListener(this);
 		menuItem_Exit.addActionListener(this);
