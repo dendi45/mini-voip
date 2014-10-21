@@ -13,7 +13,7 @@ import com.evanram.voip.VoIPApplication;
 public class TCPClient extends Client
 {
 	private DataOutputStream out;
-	
+
 	public TCPClient(InetAddress peerIp, int peerPort, AudioManager am)
 	{
 		super(peerIp, peerPort, am);
@@ -26,20 +26,16 @@ public class TCPClient extends Client
 		{
 			out = new DataOutputStream(socket.getOutputStream());
 			out.flush();
-			
+
 			while(running && Utils.tcpSocketOK(socket))
 			{
-				out.write(am.read());	//send next read audio bytes to server
+				out.write(am.read()); //send next read audio bytes to server
 				out.flush();
 			}
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
-			System.err.println("Error in establishing connection to peer socket");
-		}
-		finally
-		{
 			VoIPApplication.instance.endCall();
 		}
 	}

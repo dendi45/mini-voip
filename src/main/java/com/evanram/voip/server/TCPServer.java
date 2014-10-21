@@ -14,12 +14,12 @@ public class TCPServer extends Server
 	private ServerSocket serverSocket;
 	private Socket remoteSocket;
 	private DataInputStream remoteSocketInputStream;
-	
+
 	public TCPServer(int port, AudioManager am)
 	{
 		super(port, am);
 	}
-	
+
 	@Override
 	public void enterServerLoop()
 	{
@@ -40,9 +40,6 @@ public class TCPServer extends Server
 		catch(IOException e)
 		{
 			e.printStackTrace();
-		}
-		finally
-		{
 			VoIPApplication.instance.endCall();
 		}
 	}

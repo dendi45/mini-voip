@@ -9,7 +9,6 @@ import com.evanram.voip.AudioManager;
 import com.evanram.voip.CallData;
 import com.evanram.voip.VoIPApplication;
 
-
 public class UDPClient extends Client
 {
 	public UDPClient(InetAddress peerIp, int peerPort, AudioManager am)
@@ -21,21 +20,17 @@ public class UDPClient extends Client
 	public void enterClientLoop()
 	{
 		//TODO keep-alive packets to make sure that the other end is still alive
-		
+
 		try
 		{
 			while(running) // when keep-alive is implemented: while(running && keptAlive) ...
 			{
-				sendPacket(am.read());	//send next read audio bytes to server
+				sendPacket(am.read()); //send next read audio bytes to server
 			}
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
-			System.err.println("Error in sending packet over UDP datagram socket");
-		}
-		finally
-		{
 			VoIPApplication.instance.endCall();
 		}
 	}
@@ -46,7 +41,7 @@ public class UDPClient extends Client
 		socket.send(new DatagramPacket(data, data.length, peerIp, peerPort));
 		socket.close();
 	}
-	
+
 	@Override
 	public void implementedStopClient() throws IOException
 	{
