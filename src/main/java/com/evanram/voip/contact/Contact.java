@@ -10,7 +10,7 @@ public class Contact
 	private InetAddress address;
 	private int port;
 	private String cachedTruncatedEllipsisName = null;
-	
+
 	public Contact(String name, InetAddress address, int port)
 	{
 		this.name = name;
@@ -37,7 +37,7 @@ public class Contact
 	{
 		if(!this.name.equals(name))
 			cachedTruncatedEllipsisName = null;
-		
+
 		this.name = name;
 	}
 
@@ -50,18 +50,18 @@ public class Contact
 	{
 		this.port = port;
 	}
-	
+
 	public String getTruncatedEllipsisName(int maxWidth)
 	{
-		if(cachedTruncatedEllipsisName != null)	//caching so that stringWidth calls are not constantly made.
+		if(cachedTruncatedEllipsisName != null) //caching so that stringWidth calls are not constantly made.
 			return cachedTruncatedEllipsisName;
-		
+
 		String newName = name;
 		int width = Utils.stringWidth(newName);
 		int substringPos;
 		for(substringPos = newName.length(); width > maxWidth && width != 0; substringPos--)
 			width = Utils.stringWidth(newName = newName.substring(0, substringPos));
-		
+
 		if(!newName.equals(name))
 			newName += "...";
 

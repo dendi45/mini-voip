@@ -14,7 +14,7 @@ public class UpdateTextTask extends TimerTask
 	private String defaultString;
 	private int blinkCounter = -1;
 	private VoIPApplication voip = VoIPApplication.instance;
-	
+
 	public UpdateTextTask(JFrame frame, JLabel label, String defaultString)
 	{
 		this.frame = frame;
@@ -27,8 +27,9 @@ public class UpdateTextTask extends TimerTask
 	{
 		String labelText, titleText;
 		char blink;
-		
-		switch(++blinkCounter)	//displays a blinking dot next to taskbar
+
+		switch(++blinkCounter)
+		//displays a blinking dot next to taskbar
 		{
 			case 0:
 				blink = '\u25DD'; //top-right
@@ -43,15 +44,15 @@ public class UpdateTextTask extends TimerTask
 				blink = '\u25DC'; //top-left
 				blinkCounter = -1;
 		}
-		
+
 		if(voip.isInCall())
 		{
 			labelText = voip.getCallInfo();
-			titleText = voip.getCallTime() + "    " + blink;	//info is too long to display in taskbar, so show the time
+			titleText = voip.getCallTime() + "    " + blink; //info is too long to display in taskbar, so show the time
 		}
 		else
 			labelText = titleText = defaultString;
-		
+
 		label.setText(labelText);
 		frame.setTitle(titleText);
 	}

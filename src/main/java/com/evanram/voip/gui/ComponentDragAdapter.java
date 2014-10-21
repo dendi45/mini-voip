@@ -10,12 +10,12 @@ public class ComponentDragAdapter extends MouseAdapter
 {
 	private Component parent;
 	private Point p;
-	
+
 	public ComponentDragAdapter(Component parent)
 	{
 		this.parent = parent;
 	}
-	
+
 	@Override
 	public void mouseDragged(MouseEvent event)
 	{
@@ -26,10 +26,10 @@ public class ComponentDragAdapter extends MouseAdapter
 		int dY = (oY + event.getY()) - (oY + p.y);
 		int x = oX + dX;
 		int y = oY + dY;
-		
+
 		parent.setLocation(x, y);
 	}
-	
+
 	@Override
 	public void mousePressed(MouseEvent event)
 	{

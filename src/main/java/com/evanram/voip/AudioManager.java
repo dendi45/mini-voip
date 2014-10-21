@@ -15,22 +15,22 @@ public class AudioManager
 {
 	//16k default buffer and sample rate work, as far as my tests have gone, well in terms of call quality.
 	public static final int DEFAULT_BUFFER_SIZE = 16_000;
-	
+
 	private static final int DATA_LINE_INFO_BUFFER_SIZE = 1024;
-	
+
 	private int bufferSize;
 	private int nextBufferSize = bufferSize;
-	
+
 	private DataLine.Info dataLineInfo;
 	private TargetDataLine targetDataLine;
 	private AudioFormat audioFormat;
-	
+
 	public AudioManager(int initialBufferSize)
 	{
 		nextBufferSize = initialBufferSize;
 		update();
 	}
-	
+
 	public void update()
 	{
 		try
@@ -40,7 +40,7 @@ public class AudioManager
 				targetDataLine.stop();
 				targetDataLine.close();
 			}
-			
+
 			bufferSize = nextBufferSize;
 
 			audioFormat = new AudioFormat(bufferSize, 16, 2, true, false);
@@ -54,19 +54,19 @@ public class AudioManager
 			e.printStackTrace();
 		}
 	}
-	
+
 	public byte[] read()
 	{
 		byte[] buffer = new byte[bufferSize];
 		targetDataLine.read(buffer, 0, buffer.length);
 		return buffer;
 	}
-	
+
 	public void playSound(byte[] buffer)
 	{
 		if(isMostlyQuiet(buffer))
 			return;
-		
+
 		try
 		{
 			final Clip clip = AudioSystem.getClip();
@@ -80,7 +80,7 @@ public class AudioManager
 						clip.close();
 				}
 			});
-			
+
 			clip.open(audioFormat, buffer, 0, buffer.length);
 			clip.start();
 		}
@@ -89,12 +89,12 @@ public class AudioManager
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void setNextBufferSize(int nextBufferSize)
 	{
 		this.nextBufferSize = nextBufferSize;
 	}
-	
+
 	public int getBufferSize()
 	{
 		return bufferSize;

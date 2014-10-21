@@ -9,13 +9,13 @@ public class ContactManager
 {
 	private List<Contact> contacts = new ArrayList<>();
 	private Contact latestContact;
-	
+
 	public ContactManager()
 	{
 		//TODO load contacts from external location
 		//TODO contacts may be encrypted or not
 	}
-	
+
 	public List<Contact> getContacts()
 	{
 		//TODO remove this debugging stuff...
@@ -24,14 +24,14 @@ public class ContactManager
 			for(int i = 0; i < 10; i++)
 				contacts.add(new Contact(Integer.toHexString((int) (Math.random() * 100000)), InetAddress.getLocalHost(), 38936));
 		}
-		catch (UnknownHostException e)
+		catch(UnknownHostException e)
 		{
 			e.printStackTrace();
-		} 
+		}
 
 		return contacts;
 	}
-	
+
 	public Contact get(String name)
 	{
 		for(Contact contact : contacts)
@@ -39,20 +39,20 @@ public class ContactManager
 			if(contact.getName().equalsIgnoreCase(name))
 				return contact;
 		}
-		
+
 		return null;
 	}
-	
+
 	public Contact getLatestContact()
 	{
 		return latestContact;
 	}
-	
+
 	public void setLatestContact(Contact latestContact)
 	{
 		this.latestContact = latestContact;
 	}
-	
+
 	public void addNew(Contact contact)
 	{
 		contacts.add(contact);
