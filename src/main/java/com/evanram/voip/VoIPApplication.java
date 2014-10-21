@@ -21,8 +21,8 @@ public class VoIPApplication
 {
 	public static final int PROTOCOL_UDP = 0;
 	public static final int PROTOCOL_TCP = 1;
-	
-	public static VoIPApplication instance;	//singleton since this class should never be created more than once
+
+	public static VoIPApplication instance; //singleton since this class should never be created more than once
 	public static ContactManager contactManager = new ContactManager();
 
 	private Gui gui;
@@ -30,17 +30,20 @@ public class VoIPApplication
 	private Server server;
 	private Client client;
 	private InetAddress peerAddress;
+	private int protocol = PROTOCOL_UDP;
 	private Scanner scanner;
 	private boolean noguiMode = false;
 	private volatile long callStartTimeMillis;
-	
-	private VoIPApplication() {}	//disallow instantiation from other classes
-	
+
+	private VoIPApplication() //disallow instantiation from other classes
+	{
+	}
+
 	public static void main(String[] args)
 	{
 		System.out.println("Starting p2p VoIP. Note any two peers must share the same network protocol");
 		instance = new VoIPApplication();
-		
+
 		if(args.length > 0 && args[0].equalsIgnoreCase("-nogui"))
 		{
 			instance.noguiMode = true;
@@ -49,26 +52,26 @@ public class VoIPApplication
 		else
 			instance.setGui(new Gui());
 	}
-	
+
 	public void start(Contact contact)
 	{
 		if(am == null)
-			am = new AudioManager(AudioManager.DEFAULT_BUFFER_SIZE);	//initialize audio manager
+			am = new AudioManager(AudioManager.DEFAULT_BUFFER_SIZE); //initialize audio manager
 		else
-			am.update();	//update objects in audio manager
-		
+			am.update(); //update objects in audio manager
+
 		contactManager.setLatestContact(contact);
-		
+
 		try
 		{
 			int protocol, serverPort, peerPort;
 			InetAddress peerAddress;
-			
-			if(this.noguiMode)	
+
+			if(this.noguiMode)
 			{
 				if(scanner == null)
 					scanner = new Scanner(System.in);
-				
+
 				System.out.print("Network protocol (0 = UDP, 1 = TCP): ");
 				protocol = Integer.parseInt(getOrDefault(scanner.nextLine(), "0"));
 				System.out.print("Server listen port: ");
@@ -80,25 +83,25 @@ public class VoIPApplication
 			}
 			else
 			{
-				protocol = PROTOCOL_UDP;
+				protocol = this.protocol;
 				serverPort = 38936;
 				peerPort = contact.getPort();
 				peerAddress = contact.getAddress();
 			}
-			
+
 			if(peerAddress == InetAddress.getLoopbackAddress() && peerPort == serverPort)
 				System.out.println("Echo mode detected (peer is localhost & peer and server ports are equal)");
-			
+
 			System.out.println("Starting call with settings: \n" + formSettingsJSON(protocol, serverPort, peerAddress, peerPort));
-			
+
 			this.peerAddress = peerAddress;
-			
+
 			server = (protocol == 0 ? new UDPServer(serverPort, am) : new TCPServer(serverPort, am));
 			server.start();
-			
+
 			client = (protocol == 0 ? new UDPClient(peerAddress, peerPort, am) : new TCPClient(peerAddress, peerPort, am));
 			client.start();
-			
+
 			callStartTimeMillis = System.currentTimeMillis();
 		}
 		catch(UnknownHostException e)
@@ -111,7 +114,7 @@ public class VoIPApplication
 			endCall();
 		}
 	}
-	
+
 	public void shutdown()
 	{
 		try
@@ -123,43 +126,61 @@ public class VoIPApplication
 			System.exit(0);
 		}
 	}
-	
+
 	public void endCall()
 	{
+		if(server == null && client == null)
+		{
+			System.out.println("Attempted to end call with null server and null client");
+			return;
+		}
+
 		peerAddress = null;
-		
+
 		try
 		{
 			if(client != null)
 				client.stopClient();
-			
+		}
+		finally
+		{
+			if(client != null)
+				client.interrupt();
+
+			client = null;
+		}
+
+		try
+		{
 			if(server != null)
 				server.stopServer();
 		}
 		finally
 		{
-			client = null;
+			if(server != null)
+				server.interrupt();
+
 			server = null;
 		}
-		
+
 		System.out.println("Call ended");
 	}
-	
+
 	public String getCallInfo()
 	{
 		Contact contact = contactManager.getLatestContact();
-		String name = contact.getTruncatedEllipsisName(gui.getWidth() / 2);	//this is a good dynamic size to have before limiting name
+		String name = contact.getTruncatedEllipsisName(gui.getWidth() / 2); //this is a good dynamic size to have before limiting name
 		return new StringBuilder().append(name).append(" - ").append(getCallTime()).toString();
 	}
-	
+
 	public String getCallTime()
 	{
 		long delta = System.currentTimeMillis() - callStartTimeMillis;
-		
+
 		int seconds = (int) ((delta / 1000) % 60);
-		int minutes = (int) ((delta / (1000*60)) % 60);
-		int hours = (int) ((delta / (1000*60*60)) % 24);
-		
+		int minutes = (int) ((delta / (1000 * 60)) % 60);
+		int hours = (int) ((delta / (1000 * 60 * 60)) % 24);
+
 		return String.format("%d:%02d:%02d", hours, minutes, seconds);
 	}
 
@@ -173,11 +194,17 @@ public class VoIPApplication
 		this.gui = gui;
 	}
 
+	public void setProtocol(int protocol)
+	{
+		this.protocol = protocol;
+		System.out.println("Updated network protocol to " + protocol);
+	}
+
 	public AudioManager getAudioManager()
 	{
 		return am;
 	}
-	
+
 	public boolean isInCall()
 	{
 		return peerAddress != null && client.isRunning() && server.isRunning();
