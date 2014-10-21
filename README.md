@@ -37,6 +37,9 @@ Option for UDP, TCP hole punching
 
 ######Secondary Objectives
 
+Code documentation
+- Javadocs must be written at some point
+
 Allow user to change audio buffer size
 - Had to remove this since the feature was constantly breaking
 
