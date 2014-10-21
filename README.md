@@ -27,19 +27,18 @@ Auto updating
 - Display information such as application version
 - Possibly render an HTML page; certain elements of it can be replaced with online info (such as latest update info)
 
-Transparent GUI
-- This was previously mostly working (and it looked decent)
-- Not implemented due to rendering issues with the JMenus and JMenuItems while JFrame is transparent
-
 Option for UDP, TCP hole punching
 - Users should not have to port forward just to call others
 - Server software for others to run their own NAT
-
-SRTP or SRTCP
-- Encryption by default, Organized packet system
-
 
 ######Secondary Objectives
 
 Allow user to change audio buffer size
 - Had to remove this since the feature was constantly breaking
+
+Transparent GUI
+- This was previously mostly working (and it looked decent)
+- Not implemented due to rendering issues with the JMenus and JMenuItems while JFrame is transparent
+
+SRTP or SRTCP
+- Encryption by default, Organized packet system
