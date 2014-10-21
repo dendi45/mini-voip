@@ -18,6 +18,10 @@ TODO:
 
 ######Primary Objectives
 
+Contact / Address Book system
+- Current system is not final (for example, random localhost-bound contacts are generated).
+- Implement GUI.
+
 Auto updating
 - Press a button in below proposed info menu item
 - Replace jar in background or replace certain classes in current jar (similar to `jar uf` command?)
